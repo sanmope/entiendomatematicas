@@ -137,7 +137,9 @@ Apoyado en el heatmap. `focusCell()` al hacer click en una celda:
   La cara de atrás tiene dos partes: `.memo-main` (arriba) y `.memo-sub` (abajo, chiquita).
   Destapada muestra la operación en `.memo-main` y `.memo-sub` vacía; al emparejar,
   `matchMemoCell()` pasa el **resultado** a `.memo-main` y la **operación** a `.memo-sub`,
-  para que quede a la vista de dónde salió ese número.
+  para que quede a la vista de dónde salió ese número. La celda toma además el **color que ese
+  resultado tiene en el heatmap** (`--memo-color`) y el color de texto que contrasta con él
+  (`--memo-text`), así el tablero terminado se parece al modo Heatmap.
   Detalles importantes:
   - Los resultados **únicos** (1, 25, 49, 64, 81, 100 — los cuadrados sin otra
     factorización dentro del rango) se muestran con "?" pero no cuentan para ganar
@@ -158,9 +160,13 @@ Apoyado en el heatmap. `focusCell()` al hacer click en una celda:
   memotest, totales) se adapta solo. `MAX_PRODUCT = MAX*MAX` (para el color).
   Ojo: los textos que dicen "del 1 al 10" (`index.html`, `manifest.webmanifest`) son
   literales y hay que cambiarlos a mano.
-- **`heatColor(value, lightness?)`**: HSL de 240° (azul) a 0° (rojo) según `value/MAX_PRODUCT`.
-  El segundo parámetro fuerza la luminosidad; lo usa el memotest (`72`) porque sobre el azul
-  oscuro de los resultados chicos el texto oscuro no se leía.
+- **`heatHsl(value)`**: la fuente de verdad del color — devuelve `{h, s, l}` (h de 240° azul
+  a 0° rojo según `value/MAX_PRODUCT`).
+- **`heatColor(value)`**: el `hsl(...)` listo para CSS.
+- **`heatTextColor(value)`**: `#0b1220` o `#f8fafc` según la luminancia del fondo. Hace falta
+  porque la escala arranca en azul oscuro, pasa por verdes/amarillos claros y termina en rojo
+  oscuro: **ningún color de texto fijo se lee en todo el rango**. Los 42 resultados posibles
+  quedan en AA (≥4.5:1); el peor es el 12 con 4.59:1. Si tocás `heatHsl`, revisá esto.
 - **`showWin()` + `launchConfetti()`**: cartel de victoria + confeti mínimo (CSS `.confetti`).
 
 ### Foco compartido (Vecinos e Iguales)

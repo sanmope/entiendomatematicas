@@ -55,12 +55,39 @@ let memoTarget = 0;
 const key = (r, c) => `${r},${c}`;
 
 // ===== Color del heatmap (frío 0 -> cálido 100) =====
-// `lightness` opcional fuerza la luminosidad (para fondos que llevan texto oscuro).
-function heatColor(value, lightness) {
+const HEAT_SAT = 0.78;
+
+function heatHsl(value) {
   const t = Math.max(0, Math.min(1, value / MAX_PRODUCT));
-  const hue = 240 - 240 * t; // 240 azul -> 0 rojo
-  const light = lightness ?? 42 + 12 * Math.sin(Math.PI * t); // más claro en el medio
-  return `hsl(${hue}, 78%, ${light}%)`;
+  return {
+    h: 240 - 240 * t, // 240 azul -> 0 rojo
+    s: HEAT_SAT,
+    l: (42 + 12 * Math.sin(Math.PI * t)) / 100, // un poco más claro en el medio
+  };
+}
+
+function heatColor(value) {
+  const { h, s, l } = heatHsl(value);
+  return `hsl(${h}, ${s * 100}%, ${l * 100}%)`;
+}
+
+// Luminancia relativa (WCAG) de un color HSL, para decidir el color del texto.
+function heatLuminance(value) {
+  const { h, s, l } = heatHsl(value);
+  const k = (n) => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const [r, g, b] = [0, 8, 4]
+    .map((n) => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1)))
+    .map((c) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+// Texto oscuro o claro según el fondo. La escala del heatmap arranca en azules
+// oscuros, pasa por verdes/amarillos claros y termina en rojo oscuro: ningún
+// color fijo se lee en todo el rango. 0.179 es el cruce donde el blanco deja de
+// contrastar mejor que el negro.
+function heatTextColor(value) {
+  return heatLuminance(value) > 0.179 ? "#0b1220" : "#f8fafc";
 }
 
 // ===== Construcción del tablero =====
@@ -299,9 +326,9 @@ function makeMemoGridCell(r, c, active) {
 
 function matchMemoCell(cell) {
   const p = +cell.dataset.product;
-  // Más claro que el heatmap: sobre el azul oscuro de los resultados chicos el
-  // texto no se leía.
-  cell.style.setProperty("--memo-color", heatColor(p, 72));
+  // El mismo color que tendría en el heatmap, así se conectan los dos modos.
+  cell.style.setProperty("--memo-color", heatColor(p));
+  cell.style.setProperty("--memo-text", heatTextColor(p));
   cell.classList.remove("revealed");
   cell.classList.add("matched");
   cell.querySelector(".card").classList.add("flipped");

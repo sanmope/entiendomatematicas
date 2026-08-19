@@ -587,11 +587,15 @@ body {
   border: 1px solid rgba(148, 163, 184, 0.25);
 }
 
+/* Emparejada: toma el color que ese resultado tiene en el heatmap. El texto y el
+   borde siguen a --memo-text porque la escala va de azul oscuro a verde claro y
+   ningún color fijo se lee sobre todo el rango. */
 .cell.matched .card-back.memo-op {
   background: var(--memo-color, var(--good));
-  color: #0b1220;
-  outline: 3px solid #fff;
+  color: var(--memo-text, #0b1220);
+  outline: 3px solid var(--memo-text, #fff);
   outline-offset: -3px;
+  transition: background 0.35s ease, color 0.35s ease;
 }
 
 /* Emparejada: el resultado grande y, abajo en chiquito, la operación */

@@ -1,6 +1,8 @@
-// Service worker mínimo para uso offline (cache-first de los archivos del juego).
-// Subí la versión del cache cada vez que cambies archivos para forzar la actualización.
-const CACHE = "tablas-v2";
+// Service worker con estrategia "network-first":
+// - CON internet: siempre baja la última versión desde la red (y actualiza el cache).
+//   => No hace falta subir la versión manualmente; los cambios se reflejan solos.
+// - SIN internet: sirve la última versión guardada en cache (uso offline).
+const CACHE = "tablas";
 const ASSETS = [
   "./",
   "./index.html",
@@ -17,25 +19,24 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
-    )
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request)
-        .then((resp) => {
-          const copy = resp.clone();
-          caches.open(CACHE).then((cache) => cache.put(event.request, copy));
-          return resp;
-        })
-        .catch(() => cached);
-    })
+    fetch(event.request)
+      .then((resp) => {
+        // Red OK: guardo una copia fresca en cache para el modo offline
+        const copy = resp.clone();
+        caches.open(CACHE).then((cache) => cache.put(event.request, copy));
+        return resp;
+      })
+      .catch(() => caches.match(event.request)) // Sin red: uso lo cacheado
   );
 });

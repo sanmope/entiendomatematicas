@@ -26,9 +26,9 @@ No hay tests, ni linter, ni paso de compilación. Editar y recargar.
 - Es **instalable** ("Agregar a pantalla de inicio") y funciona **offline** vía
   `manifest.webmanifest` + `sw.js`. El service worker **solo corre por http/https**
   (GitHub Pages sirve), no con `file://`.
-- **Importante:** al cambiar `index.html`/`style.css`/`script.js`, subí la constante
-  `CACHE` en `sw.js` (ej. `tablas-v1` → `tablas-v2`) para que el celu tome la versión nueva.
-  Si no, el service worker sigue sirviendo la versión cacheada.
+- El `sw.js` usa estrategia **network-first**: con internet siempre baja la última versión
+  (y actualiza el cache), y sin internet sirve lo último cacheado. **No hay que subir ningún
+  número de versión**: los cambios se reflejan solos al hacer push + recargar.
 
 ---
 
@@ -40,7 +40,7 @@ practica-tablas/
 ├── style.css             # Todo el estilo. Tema oscuro. Variables CSS en :root. Layout de 2 columnas + responsive.
 ├── script.js             # Toda la lógica. Vanilla JS, sin módulos. Un solo archivo.
 ├── manifest.webmanifest  # PWA: nombre, colores, ícono (para "agregar a pantalla de inicio").
-├── sw.js                 # Service worker: cache-first para usar offline. Subir CACHE al cambiar archivos.
+├── sw.js                 # Service worker: network-first (última versión con internet, cache offline).
 └── icon.svg              # Ícono de la app (SVG, texto plano). Usado por manifest y apple-touch-icon.
 ```
 

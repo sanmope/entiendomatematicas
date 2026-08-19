@@ -562,7 +562,11 @@ function handleResultMode(cell) {
 
     if (targetCells.length === 0) {
       statusEl.innerHTML = `¡Encontraste todas las de <span class="target">${currentTarget}</span>! 👏`;
-      if (!checkWin()) setTimeout(pickNewTarget, 900);
+      if (!checkWin()) {
+        // Nombra el número: completar un target es un logro concreto, no una racha
+        showCongrats(3000, `¡Todas las de ${currentTarget}! 🎉`);
+        setTimeout(pickNewTarget, 900);
+      }
     }
   } else {
     shake(cell);
@@ -695,14 +699,17 @@ function bumpStreak() {
   if (matchStreak % CONGRATS_EVERY === 0) showCongrats();
 }
 
-function showCongrats() {
-  congrats.textContent = CONGRATS_MSGS[Math.floor(Math.random() * CONGRATS_MSGS.length)];
+// `ms` maneja la duración: la animación CSS toma ese valor y sus porcentajes
+// (entrada, sostén, salida) se estiran solos, así que no hay que tocar el CSS.
+function showCongrats(ms = 1000, text) {
+  congrats.textContent = text || CONGRATS_MSGS[Math.floor(Math.random() * CONGRATS_MSGS.length)];
+  congrats.style.animationDuration = `${ms}ms`;
   congrats.hidden = false;
   congrats.classList.remove("show");
   void congrats.offsetWidth; // reinicia la animación si ya estaba corriendo
   congrats.classList.add("show");
   clearTimeout(congratsTimer);
-  congratsTimer = setTimeout(hideCongrats, 1000);
+  congratsTimer = setTimeout(hideCongrats, ms);
 }
 
 function hideCongrats() {

@@ -181,11 +181,18 @@ Apoyado en el heatmap. `focusCell()` al hacer click en una celda:
   oscuro: **ningún color de texto fijo se lee en todo el rango**. Los 42 resultados posibles
   quedan en AA (≥4.5:1); el peor es el 12 con 4.59:1. Si tocás `heatHsl`, revisá esto.
 - **`showWin()` + `launchConfetti()`**: cartel de victoria + confeti mínimo (CSS `.confetti`).
-- **`bumpStreak()` / `showCongrats()`**: cada `CONGRATS_EVERY` (5) aciertos en los modos de
-  emparejar aparece un cartel de 1 segundo (`#congrats`). Cuenta aciertos **acumulados de la
-  partida, no seguidos**: la idea es festejar el avance, no castigar un error. En Espejo solo
-  cuentan los pares, no las celdas de la diagonal (esas salen con un click). Se reinicia en
-  `resetGame()` y se esconde al ganar, para que no se pise con el cartel de victoria.
+- **`showCongrats(ms, texto?)`**: cartel breve (`#congrats`). El `ms` va como
+  `animation-duration` inline y los porcentajes del keyframe (entrada, sostén, salida) se
+  estiran solos, así que para cambiar la duración **no hay que tocar el CSS**. Dos usos hoy:
+  - **`bumpStreak()`** → cada `CONGRATS_EVERY` (5) aciertos en los modos de emparejar,
+    **1 segundo**, mensaje al azar de `CONGRATS_MSGS`. Cuenta aciertos **acumulados de la
+    partida, no seguidos**: la idea es festejar el avance, no castigar un error. En Espejo
+    solo cuentan los pares, no las celdas de la diagonal (esas salen con un click).
+  - **Resultado → Operación**, al completar todas las celdas de un número: **3 segundos**,
+    con el número en el texto. Es un logro concreto, no una racha, por eso lo nombra.
+
+  Se reinicia en `resetGame()` y se esconde al ganar, para que no se pise con el cartel de
+  victoria. Lleva `pointer-events: none`: nunca debe bloquear el tablero.
 
 ### Foco compartido (Vecinos e Iguales)
 Los dos modos con "enfocar una celda y atenuar el resto" usan los mismos helpers:

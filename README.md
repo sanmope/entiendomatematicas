@@ -1,6 +1,6 @@
 # Práctica de Tablas
 
-Juego web para practicar las **tablas de multiplicar** (del 0 al 10) con varios modos:
+Juego web para practicar las **tablas de multiplicar** (del 1 al 10) con varios modos:
 enseñanza, práctica, memoria y visualización. Es 100% estático (HTML + CSS + JS
 vanilla), **sin dependencias, sin build y sin backend**. Se abre haciendo doble click
 en `index.html` o sirviéndolo desde cualquier hosting estático (GitHub Pages, etc.).
@@ -74,7 +74,7 @@ Todo gira alrededor de una variable global **`mode`** y una función **`resetGam
   alternado por el botón `#same-toggle`.
 - **`resetGame()`** es el punto central: limpia estado, llama a `buildBoard()`, decide qué
   UI mostrar (leyenda, progreso, switch, botón) y ajusta textos con `setStatusAndHint()`.
-- **`buildBoard()`** dibuja la grilla 11×11 (encabezados 0–10 + celdas). Según el modo
+- **`buildBoard()`** dibuja la grilla 11×11 (encabezados 1–10 + 100 celdas). Según el modo
   crea celdas distintas:
   - `makeCell(r,c)` → carta con volteo (modos op-to-result / result-to-op / mirror).
   - `makeHeatCell(r,c)` → celda coloreada (modos heatmap / neighbors / same-explore).
@@ -85,7 +85,7 @@ Cada celda guarda `data-r`, `data-c` y `data-product` (= r*c). Helper `key(r,c)`
 ### Estado (variables globales relevantes)
 - `solved` (Set de `"r,c"`): celdas resueltas en los modos con `updateProgress()`.
 - `currentTarget`, `targetCells`: modo Resultado → Operación.
-- `firstPick`, `matchedPairs`: modo Espejo.
+- `firstPick`: modo Espejo (la primera carta destapada).
 - `activeCell`: celda cuyo modal está abierto.
 - `sameSub`, `memoFirst`, `memoLock`, `memoMatched`, `memoTarget`: modo Iguales/Memotest.
 
@@ -110,7 +110,7 @@ con un solo click. Progreso/victoria vía `computeTotals()` + `checkWin()`.
 
 ### 4. Heatmap (`heatmap`)
 Solo visualización (no interactivo salvo hover). `makeHeatCell()` colorea cada celda con
-`heatColor(p)` (frío azul cerca de 0 → cálido rojo cerca de 100). La **diagonal** se resalta
+`heatColor(p)` (frío azul en los resultados chicos → cálido rojo cerca de 100). La **diagonal** se resalta
 (`.diagonal-heat`), el **triángulo inferior** (`r>c`, `.tri-lower`) se ve más brilloso y el
 **superior** (`r<c`, `.tri-upper`) más apagado, para mostrar la simetría. Muestra `#legend`.
 
@@ -127,11 +127,16 @@ Apoyado en el heatmap. `focusCell()` al hacer click en una celda:
 - **Explorar (`sameSub="explore"`)**: `highlightSame()` — al tocar una celda resalta **todas**
   las que dan ese mismo resultado (`.iso`) y atenúa el resto. Reutiliza el estilo del heatmap.
 - **Memotest (`sameSub="memotest"`)**: juego de memoria **sobre la misma grilla**. Todas las
-  celdas (menos la fila/columna del 0) quedan dadas vuelta con "?" (`makeMemoGridCell`).
+  celdas quedan dadas vuelta con "?" (`makeMemoGridCell`).
   `onMemoClick()`: destapás dos; si dan el **mismo resultado**, quedan emparejadas (`matched`).
+  La cara de atrás tiene dos partes: `.memo-main` (arriba) y `.memo-sub` (abajo, chiquita).
+  Destapada muestra la operación en `.memo-main` y `.memo-sub` vacía; al emparejar,
+  `matchMemoCell()` pasa el **resultado** a `.memo-main` y la **operación** a `.memo-sub`,
+  para que quede a la vista de dónde salió ese número.
   Detalles importantes:
-  - Los resultados **únicos** (5×5=25, 7×7=49, etc.) se muestran con "?" pero no cuentan
-    para ganar (no tienen par).
+  - Los resultados **únicos** (1, 25, 49, 64, 81, 100 — los cuadrados sin otra
+    factorización dentro del rango) se muestran con "?" pero no cuentan para ganar
+    (no tienen par). Por eso el objetivo es **94** y no 100.
   - Los resultados con **cantidad impar de celdas** (ej. 16 = 2×8, 8×2, 4×4): emparejás dos y
     la que queda **suelta** se cierra destapándola y tocando una del mismo resultado **ya
     emparejada** (ver el `if (cell.classList.contains("matched"))` en `onMemoClick`).
@@ -143,11 +148,26 @@ Apoyado en el heatmap. `focusCell()` al hacer click en una celda:
 
 ## Config y utilidades clave
 
-- **`MIN` / `MAX`** (líneas ~2-3): rango de la tabla. Para cambiar a "0 al 12", poné `MAX = 12`.
-  El resto (grilla, colores, memotest) se adapta solo. `MAX_PRODUCT = MAX*MAX` (para el color).
-- **`heatColor(value)`**: HSL de 240° (azul) a 0° (rojo) según `value/MAX_PRODUCT`.
-- **`shuffle(arr)`**: Fisher–Yates (por si se necesita barajar).
+- **`MIN` / `MAX`** (líneas ~2-3): rango de la tabla, hoy **1 a 10**. Para llegar hasta el 12,
+  poné `MAX = 12`; para incluir la tabla del 0, `MIN = 0`. El resto (grilla, colores,
+  memotest, totales) se adapta solo. `MAX_PRODUCT = MAX*MAX` (para el color).
+  Ojo: los textos que dicen "del 1 al 10" (`index.html`, `manifest.webmanifest`) son
+  literales y hay que cambiarlos a mano.
+- **`heatColor(value, lightness?)`**: HSL de 240° (azul) a 0° (rojo) según `value/MAX_PRODUCT`.
+  El segundo parámetro fuerza la luminosidad; lo usa el memotest (`72`) porque sobre el azul
+  oscuro de los resultados chicos el texto oscuro no se leía.
 - **`showWin()` + `launchConfetti()`**: cartel de victoria + confeti mínimo (CSS `.confetti`).
+
+### Foco compartido (Vecinos e Iguales)
+Los dos modos con "enfocar una celda y atenuar el resto" usan los mismos helpers:
+
+- **`startFocus(cell)`**: aplica `.dimmed` + `.focus` y devuelve `{r, c, p}`; devuelve
+  `null` si la celda ya estaba enfocada (tocar de nuevo = volver a la vista completa).
+- **`markSameResult(cell, p)`**: marca `.iso` en las demás celdas que dan `p` y devuelve
+  cuántas marcó.
+- **`isVisibleCell(cell)`**: `false` para el triángulo de arriba cuando el switch de espejo
+  está prendido (esas celdas son `visibility: hidden`, no se resaltan ni se cuentan).
+- **`clearFocus()`**: limpia clases de foco y saca los `.step-badge`.
 
 ---
 
@@ -163,7 +183,8 @@ Apoyado en el heatmap. `focusCell()` al hacer click en una celda:
    11×11. Si se agranda mucho la grilla, considerar no recrear todo.
 6. **Clases CSS que importan** (no romperlas): `.cell`, `.card/.card-face/.card-front/.card-back/.flipped`,
    `.diagonal`, `.diagonal-heat/.tri-lower/.tri-upper`, `.dimmed`, `.focus/.in-row/.in-col/.neighbor/.iso`,
-   `.step-badge`, `.memo-cover/.memo-op/.matched/.memo-blank`, `.hide-mirror`, `.confetti`.
+   `.step-badge`, `.memo-cover/.memo-op/.memo-main/.memo-sub/.matched/.memo-blank`, `.hide-mirror`,
+   `.confetti`.
 7. **Al agregar un modo nuevo**: (a) agregar una `.tab` con `data-mode` en `index.html`,
    (b) manejar el `mode` en `buildBoard`, `setStatusAndHint`, `resetGame` y `checkWin`,
    (c) crear su `makeXCell` o su handler de click.
@@ -188,8 +209,11 @@ Cosas que quedaron pendientes o que suman valor educativo, ordenadas de más fá
 - **PWA** (✅ hecho): manifest + service worker. Mejora pendiente: aviso de "hay una versión
   nueva, recargá" cuando cambia el service worker.
 - **i18n**: separar los textos para poder traducir (hoy están hardcodeados en español).
-- **Tests**: al no haber build, se podría agregar un set mínimo de pruebas de la lógica pura
-  (`heatColor`, `computeMemoData`, emparejamientos) extrayéndola a funciones testeables.
+- **Tests**: no hay suite en el repo (a propósito: cero dependencias). Si necesitás verificar
+  un cambio, `jsdom` **fuera del repo** alcanza para un smoke test completo: cargás
+  `index.html`, hacés `window.eval(script.js)` y disparás clicks sobre las tabs y las celdas.
+  Así se validaron el pase a MIN=1 y el refactor del foco. Nota: jsdom normaliza los
+  `hsl()` de `heatColor` a `rgb()` al leer `style.backgroundColor`.
 
 ---
 

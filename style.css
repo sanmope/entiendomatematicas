@@ -578,6 +578,9 @@ body {
 }
 
 .card-back.memo-op {
+  flex-direction: column;
+  gap: 1px;
+  line-height: 1.05;
   background: var(--card);
   color: var(--text);
   font-size: clamp(0.55rem, 2.4vw, 0.95rem);
@@ -586,17 +589,27 @@ body {
 
 .cell.matched .card-back.memo-op {
   background: var(--memo-color, var(--good));
-  color: #06210f;
+  color: #0b1220;
   outline: 3px solid #fff;
   outline-offset: -3px;
-  font-size: clamp(0.65rem, 2.8vw, 1.1rem);
+}
+
+/* Emparejada: el resultado grande y, abajo en chiquito, la operación */
+.cell.matched .memo-main {
+  font-size: clamp(0.7rem, 3vw, 1.2rem);
+}
+
+.cell.matched .memo-sub {
+  font-size: clamp(0.42rem, 1.85vw, 0.7rem);
+  font-weight: 600;
+  opacity: 0.72;
 }
 
 .cell.matched {
   cursor: default;
 }
 
-/* Celdas en blanco del memotest (×0 o mitad apagada): no se muestran ni se juegan */
+/* Celdas en blanco del memotest (mitad apagada): no se muestran ni se juegan */
 .cell.memo-blank {
   background: transparent;
   pointer-events: none;
@@ -755,7 +768,7 @@ body {
   }
 }
 
-/* Celular: la grilla (12 columnas) se ajusta al ancho de pantalla */
+/* Celular: la grilla (11 columnas) se ajusta al ancho de pantalla */
 @media (max-width: 640px) {
   .app {
     padding: 10px;
@@ -763,8 +776,8 @@ body {
   }
   :root {
     --gap: 4px;
-    /* ancho disponible ≈ 100vw - padding(20) - 11 gaps(44) repartido en 12 columnas */
-    --cell: clamp(22px, calc((100vw - 68px) / 12), 56px);
+    /* ancho disponible ≈ 100vw - padding(20) - 10 gaps(40) repartido en 11 columnas */
+    --cell: clamp(22px, calc((100vw - 64px) / 11), 56px);
   }
   .app-header h1 {
     font-size: 1.25rem;

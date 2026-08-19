@@ -1,7 +1,7 @@
 {
   "name": "Práctica de Tablas",
   "short_name": "Tablas",
-  "description": "Juego para practicar las tablas de multiplicar del 0 al 10.",
+  "description": "Juego para practicar las tablas de multiplicar del 1 al 10.",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",

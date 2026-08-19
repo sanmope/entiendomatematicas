@@ -1,5 +1,5 @@
 // ===== Configuración =====
-const MIN = 0;
+const MIN = 1;
 const MAX = 10;
 const NUMS = [];
 for (let n = MIN; n <= MAX; n++) NUMS.push(n);
@@ -41,8 +41,6 @@ let targetCells = [];
 
 // Modo espejo
 let firstPick = null;
-let matchedPairs = 0;
-let totalPairs = 0;
 
 // Celda del modal activo
 let activeCell = null;
@@ -56,19 +54,12 @@ let memoTarget = 0;
 
 const key = (r, c) => `${r},${c}`;
 
-function shuffle(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
 // ===== Color del heatmap (frío 0 -> cálido 100) =====
-function heatColor(value) {
+// `lightness` opcional fuerza la luminosidad (para fondos que llevan texto oscuro).
+function heatColor(value, lightness) {
   const t = Math.max(0, Math.min(1, value / MAX_PRODUCT));
   const hue = 240 - 240 * t; // 240 azul -> 0 rojo
-  const light = 42 + 12 * Math.sin(Math.PI * t); // un poco más claro en el medio
+  const light = lightness ?? 42 + 12 * Math.sin(Math.PI * t); // más claro en el medio
   return `hsl(${hue}, 78%, ${light}%)`;
 }
 
@@ -184,30 +175,56 @@ function makeHeatCell(r, c) {
   return cell;
 }
 
-// ===== Modo Iguales: resaltar el mismo resultado =====
-function highlightSame(cell) {
+// ===== Foco compartido (modos Vecinos e Iguales) =====
+function clearFocus() {
+  board.classList.remove("dimmed");
+  board.querySelectorAll(".cell").forEach((c) => {
+    c.classList.remove("focus", "in-row", "in-col", "neighbor", "iso");
+    const badge = c.querySelector(".step-badge");
+    if (badge) badge.remove();
+  });
+}
+
+// El switch de espejo esconde el triángulo de arriba: esas celdas no se resaltan
+// ni se cuentan.
+function isVisibleCell(cell) {
+  return !(board.classList.contains("hide-mirror") && cell.classList.contains("tri-upper"));
+}
+
+// Enfoca una celda y atenúa el resto. Devuelve {r, c, p}, o null si la celda ya
+// estaba enfocada (tocarla de nuevo = volver a la vista completa).
+function startFocus(cell) {
   const wasFocused = cell.classList.contains("focus");
   clearFocus();
   if (wasFocused) {
     setStatusAndHint();
-    return;
+    return null;
   }
-
-  const r = +cell.dataset.r;
-  const c = +cell.dataset.c;
-  const p = r * c;
-
   board.classList.add("dimmed");
   cell.classList.add("focus");
+  return { r: +cell.dataset.r, c: +cell.dataset.c, p: +cell.dataset.r * +cell.dataset.c };
+}
 
-  let count = 1;
+// Marca con .iso las otras celdas visibles que dan `p`. Devuelve cuántas marcó.
+function markSameResult(cell, p) {
+  let count = 0;
   board.querySelectorAll(".cell").forEach((o) => {
-    if (o === cell) return;
+    if (o === cell || !isVisibleCell(o)) return;
     if (+o.dataset.r * +o.dataset.c === p) {
       o.classList.add("iso");
       count++;
     }
   });
+  return count;
+}
+
+// ===== Modo Iguales: resaltar el mismo resultado =====
+function highlightSame(cell) {
+  const focus = startFocus(cell);
+  if (!focus) return;
+  const { r, c, p } = focus;
+
+  const count = markSameResult(cell, p) + 1;
 
   statusEl.innerHTML =
     `<span class="target">${r}×${c} = ${p}</span><br>` +
@@ -215,14 +232,14 @@ function highlightSame(cell) {
 }
 
 // ===== Memotest (sobre la grilla): emparejar operaciones con igual resultado =====
-// Todas las celdas (menos ×0) quedan jugables con "?". Devuelve las celdas activas
+// Todas las celdas quedan jugables con "?". Devuelve las celdas activas
 // y cuántos pares se pueden formar (para el progreso/victoria).
 function computeMemoData() {
   const hide = hideMirrorInput.checked;
   const active = new Set();
   const counts = {};
-  for (let r = 1; r <= MAX; r++) {
-    for (let c = 1; c <= MAX; c++) {
+  for (const r of NUMS) {
+    for (const c of NUMS) {
       if (hide && r < c) continue; // sin la mitad de arriba (espejo)
       active.add(key(r, c));
       const p = r * c;
@@ -245,8 +262,8 @@ function makeMemoGridCell(r, c, active) {
   else if (r > c) cell.classList.add("tri-lower");
   else cell.classList.add("tri-upper");
 
-  // Sin ×0 y sin las celdas no activas (mitad espejada apagada): quedan en blanco.
-  if (r === 0 || c === 0 || !active.has(key(r, c))) {
+  // Las celdas no activas (mitad espejada apagada) quedan en blanco.
+  if (!active.has(key(r, c))) {
     cell.classList.add("memo-blank");
     return cell;
   }
@@ -260,7 +277,18 @@ function makeMemoGridCell(r, c, active) {
 
   const back = document.createElement("div");
   back.className = "card-face card-back memo-op";
-  back.textContent = `${r}×${c}`;
+
+  // Destapada muestra la operación; al emparejar pasa a mostrar el resultado
+  // grande con la operación chiquita abajo (ver matchMemoCell).
+  const main = document.createElement("span");
+  main.className = "memo-main";
+  main.textContent = `${r}×${c}`;
+
+  const sub = document.createElement("span");
+  sub.className = "memo-sub";
+
+  back.appendChild(main);
+  back.appendChild(sub);
 
   card.appendChild(front);
   card.appendChild(back);
@@ -271,11 +299,14 @@ function makeMemoGridCell(r, c, active) {
 
 function matchMemoCell(cell) {
   const p = +cell.dataset.product;
-  cell.style.setProperty("--memo-color", heatColor(p));
+  // Más claro que el heatmap: sobre el azul oscuro de los resultados chicos el
+  // texto no se leía.
+  cell.style.setProperty("--memo-color", heatColor(p, 72));
   cell.classList.remove("revealed");
   cell.classList.add("matched");
   cell.querySelector(".card").classList.add("flipped");
-  cell.querySelector(".memo-op").textContent = `= ${p}`;
+  cell.querySelector(".memo-main").textContent = p;
+  cell.querySelector(".memo-sub").textContent = `${cell.dataset.r}×${cell.dataset.c}`;
   memoMatched++;
 }
 
@@ -338,15 +369,6 @@ function updateMemoProgress() {
 }
 
 // ===== Modo Vecinos: enfoque + saltos =====
-function clearFocus() {
-  board.classList.remove("dimmed");
-  board.querySelectorAll(".cell").forEach((c) => {
-    c.classList.remove("focus", "in-row", "in-col", "neighbor", "iso");
-    const badge = c.querySelector(".step-badge");
-    if (badge) badge.remove();
-  });
-}
-
 function addStepBadge(nr, nc, focusR, focusC) {
   const neighbor = getCell(nr, nc);
   if (!neighbor) return null;
@@ -365,37 +387,23 @@ function addStepBadge(nr, nc, focusR, focusC) {
 }
 
 function focusCell(cell) {
-  // Si toco la celda que ya estaba enfocada, quito el foco y vuelvo a la vista completa
-  const wasFocused = cell.classList.contains("focus");
-  clearFocus();
-  if (wasFocused) {
-    setStatusAndHint();
-    return;
-  }
-
-  const r = +cell.dataset.r;
-  const c = +cell.dataset.c;
-  const p = r * c;
-
-  board.classList.add("dimmed");
-  cell.classList.add("focus");
+  const focus = startFocus(cell);
+  if (!focus) return;
+  const { r, c, p } = focus;
 
   board.querySelectorAll(".cell").forEach((o) => {
     if (o === cell) return;
-    const or = +o.dataset.r;
-    const oc = +o.dataset.c;
-    if (or === r) o.classList.add("in-row");
-    if (oc === c) o.classList.add("in-col");
-    if (or * oc === p) o.classList.add("iso");
+    if (+o.dataset.r === r) o.classList.add("in-row");
+    if (+o.dataset.c === c) o.classList.add("in-col");
   });
 
-  const left = addStepBadge(r, c - 1, r, c);
-  const right = addStepBadge(r, c + 1, r, c);
-  const up = addStepBadge(r - 1, c, r, c);
-  const down = addStepBadge(r + 1, c, r, c);
+  // Cluster de mismo resultado (sin contar el foco)
+  const isoCount = markSameResult(cell, p);
 
-  // Contar el cluster de mismo resultado (sin contar el foco)
-  const isoCount = board.querySelectorAll(".cell.iso").length;
+  const left = addStepBadge(r, c - 1, r, c);
+  addStepBadge(r, c + 1, r, c);
+  const up = addStepBadge(r - 1, c, r, c);
+  addStepBadge(r + 1, c, r, c);
 
   const parts = [`<span class="target">${r}×${c} = ${p}</span>`];
   if (left) parts.push(`desde ${r}×${c - 1}=${left.np} sumás ${r}`);
@@ -578,7 +586,6 @@ function handleMirrorMode(cell) {
     cell.classList.add("done");
     solved.add(key(fr, fc));
     solved.add(key(r, c));
-    matchedPairs++;
     firstPick = null;
     updateProgress();
     statusEl.innerHTML = `¡Par! ${fr}×${fc} = ${c}×${r} = <span class="target">${r * c}</span>`;
@@ -601,14 +608,9 @@ function resetPick() {
 
 // ===== Progreso / victoria =====
 function computeTotals() {
-  if (mode === "mirror") {
-    const diag = NUMS.length;
-    const offDiag = NUMS.length * NUMS.length - diag;
-    totalPairs = offDiag / 2;
-    totalSolvable = offDiag + diag;
-  } else {
-    totalSolvable = NUMS.length * NUMS.length;
-  }
+  // Todos los modos con progreso resuelven la grilla entera: en Espejo las de la
+  // diagonal van de a una y el resto de a pares, pero el total es el mismo.
+  totalSolvable = NUMS.length * NUMS.length;
 }
 
 function updateProgress() {
@@ -665,7 +667,6 @@ function resetGame() {
   currentTarget = null;
   targetCells = [];
   firstPick = null;
-  matchedPairs = 0;
   winBanner.hidden = true;
   modal.hidden = true;
 
@@ -719,12 +720,12 @@ function setStatusAndHint() {
   } else if (mode === "heatmap") {
     statusEl.innerHTML = "Mapa de calor de la tabla. La <span class=\"target\">diagonal</span> está resaltada.";
     hintEl.innerHTML =
-      "Colores: fríos (azul) cerca de 0, cálidos (rojo) cerca de 100. La <b>diagonal</b> (los cuadrados n×n) tiene borde blanco y brillo. El <b>triángulo de abajo</b> se ve más brilloso y el <b>de arriba (el espejo)</b> más apagado, para que notes la simetría. Pasá el mouse para ver la operación.";
+      "Colores: fríos (azul) para los resultados chicos, cálidos (rojo) para los grandes (hasta 100). La <b>diagonal</b> (los cuadrados n×n) tiene borde blanco y brillo. El <b>triángulo de abajo</b> se ve más brilloso y el <b>de arriba (el espejo)</b> más apagado, para que notes la simetría. Pasá el mouse para ver la operación.";
   } else if (mode === "same") {
     if (sameSub === "memotest") {
       statusEl.textContent = "Encontrá las celdas que dan el mismo resultado.";
       hintEl.innerHTML =
-        "Memotest sobre la grilla: todas las celdas (menos ×0) están dadas vuelta. Descubrí dos y, si dan el <b>mismo resultado</b> (ej. 3×4 y 6×2 = 12), quedan emparejadas. Si un resultado tiene 3 celdas (ej. 16 = 2×8, 8×2 y 4×4), descubrí la que quedó suelta y tocá una del mismo resultado ya emparejada para cerrarla. Probá el switch para apagar la mitad espejada.";
+        "Memotest sobre la grilla: todas las celdas están dadas vuelta. Descubrí dos y, si dan el <b>mismo resultado</b> (ej. 3×4 y 6×2 = 12), quedan emparejadas. Si un resultado tiene 3 celdas (ej. 16 = 2×8, 8×2 y 4×4), descubrí la que quedó suelta y tocá una del mismo resultado ya emparejada para cerrarla. Probá el switch para apagar la mitad espejada.";
     } else {
       statusEl.textContent = "Tocá una celda para resaltar las que dan el mismo número.";
       hintEl.innerHTML =

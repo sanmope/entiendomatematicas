@@ -1,6 +1,6 @@
 // Service worker mínimo para uso offline (cache-first de los archivos del juego).
 // Subí la versión del cache cada vez que cambies archivos para forzar la actualización.
-const CACHE = "tablas-v1";
+const CACHE = "tablas-v2";
 const ASSETS = [
   "./",
   "./index.html",

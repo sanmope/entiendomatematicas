@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Práctica de Tablas</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- Panel lateral con info y navegación -->
+    <aside class="sidebar">
+      <header class="app-header">
+        <h1>🔢 Práctica de Tablas</h1>
+        <p class="subtitle">Aprendé jugando con la tabla del 0 al 10.</p>
+      </header>
+
+      <nav class="tabs" role="tablist" aria-label="Modos de juego">
+        <button class="tab is-active" data-mode="op-to-result" role="tab">
+          <span class="tab-ico">✏️</span>
+          <span class="tab-label">Operación → Resultado</span>
+        </button>
+        <button class="tab" data-mode="result-to-op" role="tab">
+          <span class="tab-ico">🔎</span>
+          <span class="tab-label">Resultado → Operación</span>
+        </button>
+        <button class="tab" data-mode="mirror" role="tab">
+          <span class="tab-ico">🪞</span>
+          <span class="tab-label">Espejo (Memotest)</span>
+        </button>
+        <button class="tab" data-mode="heatmap" role="tab">
+          <span class="tab-ico">🌡️</span>
+          <span class="tab-label">Heatmap</span>
+        </button>
+        <button class="tab" data-mode="neighbors" role="tab">
+          <span class="tab-ico">🧭</span>
+          <span class="tab-label">Vecinos (saltos)</span>
+        </button>
+        <button class="tab" data-mode="same" role="tab">
+          <span class="tab-ico">🟰</span>
+          <span class="tab-label">Iguales</span>
+        </button>
+      </nav>
+
+      <div class="info-panel">
+        <div class="status" id="status">Elegí una carta para empezar.</div>
+
+        <div class="progress" id="progress-wrap">
+          <div class="progress-bar"><span id="progress-fill"></span></div>
+          <span id="progress-text">0 / 0</span>
+        </div>
+
+        <div class="legend" id="legend" hidden>
+          <span class="legend-title">Escala de resultados</span>
+          <div class="legend-bar"></div>
+          <div class="legend-scale"><span>0 (frío)</span><span>100 (cálido)</span></div>
+        </div>
+
+        <label id="hide-mirror-row" class="switch-row" hidden>
+          <span class="switch">
+            <input type="checkbox" id="hide-mirror-input" />
+            <span class="slider"></span>
+          </span>
+          <span class="switch-label">Apagar mitad de arriba (espejo)</span>
+        </label>
+
+        <button id="same-toggle" class="btn btn-primary" type="button" hidden>▶ Jugar Memotest</button>
+        <button id="reset-btn" class="btn btn-ghost" type="button">Reiniciar</button>
+      </div>
+
+      <p class="hint" id="hint"></p>
+    </aside>
+
+    <!-- Tablero -->
+    <main class="board-wrap">
+      <div id="board" class="board"></div>
+    </main>
+  </div>
+
+  <!-- Modal para escribir el resultado -->
+  <div class="modal-backdrop" id="modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true">
+      <p class="modal-question" id="modal-question">5 × 3 = ?</p>
+      <form id="answer-form" autocomplete="off">
+        <input
+          type="number"
+          id="answer-input"
+          class="answer-input"
+          inputmode="numeric"
+          placeholder="Escribí el resultado"
+          aria-label="Resultado"
+        />
+        <div class="modal-feedback" id="modal-feedback"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="modal-cancel">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Comprobar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Mensaje de victoria -->
+  <div class="win-banner" id="win-banner" hidden>
+    <div class="win-card">
+      <h2>🎉 ¡Completaste el tablero!</h2>
+      <p id="win-text">¡Muy bien!</p>
+      <button class="btn btn-primary" id="win-again" type="button">Jugar de nuevo</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -29,6 +29,7 @@ const modalCancel = document.getElementById("modal-cancel");
 const winBanner = document.getElementById("win-banner");
 const winText = document.getElementById("win-text");
 const winAgain = document.getElementById("win-again");
+const congrats = document.getElementById("congrats");
 
 // ===== Estado =====
 let mode = "op-to-result";
@@ -178,6 +179,9 @@ function makeHeatCell(r, c) {
   cell.dataset.r = r;
   cell.dataset.c = c;
   cell.style.backgroundColor = heatColor(p);
+  // El texto se elige según el fondo: la escala va de azul oscuro a verde claro
+  // y ningún color fijo se lee sobre todo el rango.
+  cell.style.color = heatTextColor(p);
   cell.title = `${r} × ${c} = ${p}`;
 
   const val = document.createElement("span");
@@ -387,6 +391,7 @@ function afterMemoMatch(product) {
   updateMemoProgress();
   statusEl.innerHTML = `¡Bien! Coinciden en <span class="target">${product}</span> 🎉`;
   if (memoMatched >= memoTarget) showWin();
+  else bumpStreak();
 }
 
 function updateMemoProgress() {
@@ -616,7 +621,8 @@ function handleMirrorMode(cell) {
     firstPick = null;
     updateProgress();
     statusEl.innerHTML = `¡Par! ${fr}×${fc} = ${c}×${r} = <span class="target">${r * c}</span>`;
-    checkWin();
+    // Solo los pares cuentan para la racha: las de la diagonal salen con un click
+    if (!checkWin()) bumpStreak();
   } else {
     shake(cell);
     statusEl.innerHTML = `${r}×${c} no es el espejo. El espejo de ${fr}×${fc} es ${fc}×${fr}.`;
@@ -663,9 +669,46 @@ function showWin() {
     "mirror": "Emparejaste todos los espejos de la diagonal. ¡Excelente memoria!",
     "same": "¡Encontraste todos los pares con igual resultado! 🧠",
   };
+  hideCongrats(); // que no se pisen el cartel chico y el de victoria
   winText.textContent = messages[mode] || "¡Muy bien!";
   winBanner.hidden = false;
   launchConfetti();
+}
+
+// ===== Cartel de racha =====
+// En los modos de emparejar, cada CONGRATS_EVERY aciertos aparece un cartel de
+// un segundo. Cuenta aciertos acumulados de la partida, no seguidos: la idea es
+// festejar el avance, no castigar un error.
+const CONGRATS_EVERY = 5;
+const CONGRATS_MSGS = [
+  "¡Congrats!! 🎉",
+  "¡Genial! 🌟",
+  "¡Sos un crack! 🚀",
+  "¡Excelente! 💪",
+  "¡Vas volando! ⚡",
+];
+let matchStreak = 0;
+let congratsTimer = null;
+
+function bumpStreak() {
+  matchStreak++;
+  if (matchStreak % CONGRATS_EVERY === 0) showCongrats();
+}
+
+function showCongrats() {
+  congrats.textContent = CONGRATS_MSGS[Math.floor(Math.random() * CONGRATS_MSGS.length)];
+  congrats.hidden = false;
+  congrats.classList.remove("show");
+  void congrats.offsetWidth; // reinicia la animación si ya estaba corriendo
+  congrats.classList.add("show");
+  clearTimeout(congratsTimer);
+  congratsTimer = setTimeout(hideCongrats, 1000);
+}
+
+function hideCongrats() {
+  clearTimeout(congratsTimer);
+  congrats.classList.remove("show");
+  congrats.hidden = true;
 }
 
 function launchConfetti() {
@@ -694,6 +737,8 @@ function resetGame() {
   currentTarget = null;
   targetCells = [];
   firstPick = null;
+  matchStreak = 0;
+  hideCongrats();
   winBanner.hidden = true;
   modal.hidden = true;
 

@@ -62,7 +62,20 @@ practica-tablas/
 - Variables de color en `:root` (`--accent`, `--good`, `--bad`, `--text`, etc.).
 - Grilla con CSS Grid (`#board`).
 - Cartas con volteo 3D (`.card` + `.card-face` + `transform: rotateY`).
-- Responsive: en < 900px la sidebar pasa arriba; en < 560px achica celdas.
+- Responsive, tres escalones:
+  - `< 900px`: la sidebar pasa arriba y `.board-wrap` gana `padding-bottom: 30vh`
+    (aire para scrollear la grilla a una altura cómoda en vez de dejarla contra el borde).
+  - `< 640px`: la celda se calcula desde el **ancho**.
+  - `max-height: 600px` + landscape: la celda se calcula desde el **alto** y la sidebar vuelve
+    al costado. Sin esto, en horizontal no entraba ninguna media query de ancho y la grilla
+    quedaba de ~740px de alto en una pantalla de 390.
+- **Tamaños de fuente derivados de `--cell`**, no de `vw`: así el número ocupa siempre lo
+  máximo que entra en la celda. Los factores salen del texto más largo de cada cara
+  (`"100"` ≈ 1.65em de ancho → factor 0.45; `"10×10"` ≈ 3em → factor 0.28). Si cambiás el
+  rango de la tabla a números de más dígitos, hay que bajar esos factores.
+- `.board-wrap` usa `align-items: safe center`. El `safe` no es decorativo: con `center` a
+  secas, una grilla más grande que el contenedor desborda hacia arriba y **no se puede
+  scrollear hasta ahí**.
 
 ### `script.js`
 Un solo archivo con todo. Secciones marcadas con comentarios `// ===== ... =====`.
@@ -168,6 +181,11 @@ Apoyado en el heatmap. `focusCell()` al hacer click en una celda:
   oscuro: **ningún color de texto fijo se lee en todo el rango**. Los 42 resultados posibles
   quedan en AA (≥4.5:1); el peor es el 12 con 4.59:1. Si tocás `heatHsl`, revisá esto.
 - **`showWin()` + `launchConfetti()`**: cartel de victoria + confeti mínimo (CSS `.confetti`).
+- **`bumpStreak()` / `showCongrats()`**: cada `CONGRATS_EVERY` (5) aciertos en los modos de
+  emparejar aparece un cartel de 1 segundo (`#congrats`). Cuenta aciertos **acumulados de la
+  partida, no seguidos**: la idea es festejar el avance, no castigar un error. En Espejo solo
+  cuentan los pares, no las celdas de la diagonal (esas salen con un click). Se reinicia en
+  `resetGame()` y se esconde al ganar, para que no se pise con el cartel de victoria.
 
 ### Foco compartido (Vecinos e Iguales)
 Los dos modos con "enfocar una celda y atenuar el resto" usan los mismos helpers:

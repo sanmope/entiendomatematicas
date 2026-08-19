@@ -1,0 +1,20 @@
+{
+  "name": "Práctica de Tablas",
+  "short_name": "Tablas",
+  "description": "Juego para practicar las tablas de multiplicar del 0 al 10.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

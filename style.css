@@ -13,10 +13,16 @@
   --text-dim: #94a3b8;
   --radius: 12px;
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --cell: 62px;
+  --gap: 6px;
 }
 
 * {
   box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -25,6 +31,16 @@ body {
   font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
   background: radial-gradient(1200px 600px at 20% -10%, #1e293b, var(--bg));
   color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Evita el delay de doble-tap y el zoom accidental al tocar controles */
+.tab,
+.btn,
+.cell,
+.switch,
+.head-cell {
+  touch-action: manipulation;
 }
 
 /* ===== Layout de dos columnas ===== */
@@ -294,8 +310,9 @@ body {
 /* ===== Tablero ===== */
 .board {
   display: grid;
-  gap: 6px;
+  gap: var(--gap);
   width: max-content;
+  max-width: 100%;
 }
 
 .head-cell {
@@ -306,8 +323,9 @@ body {
   color: var(--accent);
   background: rgba(56, 189, 248, 0.08);
   border-radius: 8px;
-  width: 62px;
-  height: 62px;
+  width: var(--cell);
+  height: var(--cell);
+  font-size: clamp(0.7rem, 2.6vw, 1rem);
 }
 
 .corner-cell {
@@ -316,8 +334,8 @@ body {
 
 /* Celdas con carta */
 .cell {
-  width: 62px;
-  height: 62px;
+  width: var(--cell);
+  height: var(--cell);
   perspective: 600px;
   cursor: pointer;
 }
@@ -351,7 +369,7 @@ body {
 .card-front {
   background: var(--card);
   color: var(--text);
-  font-size: 0.95rem;
+  font-size: clamp(0.62rem, 2.5vw, 0.95rem);
   border: 1px solid rgba(148, 163, 184, 0.18);
 }
 
@@ -364,7 +382,7 @@ body {
   transform: rotateY(180deg);
   background: linear-gradient(135deg, var(--good), #16a34a);
   color: #06210f;
-  font-size: 1.35rem;
+  font-size: clamp(0.85rem, 3.4vw, 1.35rem);
 }
 
 .cell.diagonal .card-front {
@@ -405,7 +423,7 @@ body {
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  font-size: 1.05rem;
+  font-size: clamp(0.62rem, 2.6vw, 1.05rem);
   color: #0b1220;
   perspective: none;
   transition: transform 0.12s ease;
@@ -442,7 +460,7 @@ body {
   outline-offset: -3px;
   box-shadow: 0 0 0 3px #0b1220, 0 0 16px rgba(255, 255, 255, 0.65);
   font-weight: 900;
-  font-size: 1.15rem;
+  font-size: clamp(0.68rem, 2.8vw, 1.15rem);
   z-index: 2;
 }
 
@@ -551,7 +569,7 @@ body {
 .card-front.memo-cover {
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   color: #0b1220;
-  font-size: 1.6rem;
+  font-size: clamp(0.9rem, 3.8vw, 1.6rem);
 }
 
 .cell:hover .card:not(.flipped) .card-front.memo-cover {
@@ -562,7 +580,7 @@ body {
 .card-back.memo-op {
   background: var(--card);
   color: var(--text);
-  font-size: 0.95rem;
+  font-size: clamp(0.55rem, 2.4vw, 0.95rem);
   border: 1px solid rgba(148, 163, 184, 0.25);
 }
 
@@ -571,7 +589,7 @@ body {
   color: #06210f;
   outline: 3px solid #fff;
   outline-offset: -3px;
-  font-size: 1.1rem;
+  font-size: clamp(0.65rem, 2.8vw, 1.1rem);
 }
 
 .cell.matched {
@@ -715,6 +733,8 @@ body {
 @media (max-width: 900px) {
   .app {
     flex-direction: column;
+    padding: 16px;
+    gap: 16px;
   }
   .sidebar {
     position: static;
@@ -728,12 +748,54 @@ body {
   }
   .tab {
     flex: 1 1 auto;
+    justify-content: center;
+  }
+  .board-wrap {
+    align-items: flex-start;
   }
 }
 
-@media (max-width: 560px) {
-  .cell, .head-cell { width: 46px; height: 46px; }
-  .card-front { font-size: 0.75rem; }
-  .card-back { font-size: 1.05rem; }
-  .cell.heat { font-size: 0.85rem; }
+/* Celular: la grilla (12 columnas) se ajusta al ancho de pantalla */
+@media (max-width: 640px) {
+  .app {
+    padding: 10px;
+    gap: 12px;
+  }
+  :root {
+    --gap: 4px;
+    /* ancho disponible ≈ 100vw - padding(20) - 11 gaps(44) repartido en 12 columnas */
+    --cell: clamp(22px, calc((100vw - 68px) / 12), 56px);
+  }
+  .app-header h1 {
+    font-size: 1.25rem;
+  }
+  .tab {
+    padding: 9px 10px;
+    font-size: 0.82rem;
+  }
+  .tab-ico {
+    font-size: 1rem;
+  }
+  .modal {
+    padding: 20px;
+  }
+}
+
+/* Pantallas muy angostas: permitir scroll horizontal como último recurso */
+@media (max-width: 360px) {
+  .board-wrap {
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+}
+
+/* Si el dispositivo es táctil, el hover del heatmap no debe agrandar (evita saltos) */
+@media (hover: none) {
+  .cell.heat:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  .cell.heat:hover .heat-op {
+    opacity: 0.85;
+  }
 }

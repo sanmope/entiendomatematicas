@@ -766,5 +766,13 @@ hideMirrorInput.addEventListener("change", () => {
 
 resetBtn.addEventListener("click", resetGame);
 
+// ===== Service worker (para instalar y usar offline en el celu) =====
+// Solo funciona servido por http/https (GitHub Pages, etc.), no con file://
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+}
+
 // ===== Inicio =====
 resetGame();

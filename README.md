@@ -20,15 +20,28 @@ en `index.html` o sirviéndolo desde cualquier hosting estático (GitHub Pages, 
 
 No hay tests, ni linter, ni paso de compilación. Editar y recargar.
 
+### Móvil / PWA
+- El layout es **responsive**: en celular la sidebar pasa arriba y la grilla (12 columnas)
+  se ajusta al ancho con `--cell: clamp(...)` (ver media queries en `style.css`).
+- Es **instalable** ("Agregar a pantalla de inicio") y funciona **offline** vía
+  `manifest.webmanifest` + `sw.js`. El service worker **solo corre por http/https**
+  (GitHub Pages sirve), no con `file://`.
+- **Importante:** al cambiar `index.html`/`style.css`/`script.js`, subí la constante
+  `CACHE` en `sw.js` (ej. `tablas-v1` → `tablas-v2`) para que el celu tome la versión nueva.
+  Si no, el service worker sigue sirviendo la versión cacheada.
+
 ---
 
 ## Estructura de archivos
 
 ```
 practica-tablas/
-├── index.html   # Estructura: sidebar (tabs + panel de info) + tablero + modal + cartel de victoria
-├── style.css    # Todo el estilo. Tema oscuro. Variables CSS en :root. Layout de 2 columnas.
-└── script.js    # Toda la lógica. Vanilla JS, sin módulos. Un solo archivo.
+├── index.html            # Estructura: sidebar (tabs + panel de info) + tablero + modal + cartel de victoria
+├── style.css             # Todo el estilo. Tema oscuro. Variables CSS en :root. Layout de 2 columnas + responsive.
+├── script.js             # Toda la lógica. Vanilla JS, sin módulos. Un solo archivo.
+├── manifest.webmanifest  # PWA: nombre, colores, ícono (para "agregar a pantalla de inicio").
+├── sw.js                 # Service worker: cache-first para usar offline. Subir CACHE al cambiar archivos.
+└── icon.svg              # Ícono de la app (SVG, texto plano). Usado por manifest y apple-touch-icon.
 ```
 
 ### `index.html`
@@ -172,7 +185,8 @@ Cosas que quedaron pendientes o que suman valor educativo, ordenadas de más fá
   entre ancla y vecino (SVG) en vez de solo badges.
 - **Accesibilidad**: navegación por teclado en la grilla, `aria-*`, foco visible, contraste.
 - **Animaciones**: transición al cambiar de modo; feedback más rico en aciertos.
-- **PWA**: manifest + service worker para instalarlo y usarlo offline en el celu.
+- **PWA** (✅ hecho): manifest + service worker. Mejora pendiente: aviso de "hay una versión
+  nueva, recargá" cuando cambia el service worker.
 - **i18n**: separar los textos para poder traducir (hoy están hardcodeados en español).
 - **Tests**: al no haber build, se podría agregar un set mínimo de pruebas de la lógica pura
   (`heatColor`, `computeMemoData`, emparejamientos) extrayéndola a funciones testeables.

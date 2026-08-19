@@ -29,6 +29,11 @@ No hay tests, ni linter, ni paso de compilación. Editar y recargar.
 - El `sw.js` usa estrategia **network-first**: con internet siempre baja la última versión
   (y actualiza el cache), y sin internet sirve lo último cacheado. **No hay que subir ningún
   número de versión**: los cambios se reflejan solos al hacer push + recargar.
+- **Ojo con el cache HTTP**: GitHub Pages manda `Cache-Control: max-age=600`, así que un
+  `fetch()` común se resuelve desde el cache del navegador y podés ver hasta 10 minutos de
+  atraso — el "network-first" queda en la nada. Por eso `fetchFresh()` pide con
+  `cache: "reload"`. Si algún día no ves un cambio en el celu, ese es el primer lugar donde
+  mirar.
 
 ---
 
@@ -40,7 +45,7 @@ practica-tablas/
 ├── style.css             # Todo el estilo. Tema oscuro. Variables CSS en :root. Layout de 2 columnas + responsive.
 ├── script.js             # Toda la lógica. Vanilla JS, sin módulos. Un solo archivo.
 ├── manifest.webmanifest  # PWA: nombre, colores, ícono (para "agregar a pantalla de inicio").
-├── sw.js                 # Service worker: network-first (última versión con internet, cache offline).
+├── sw.js                 # Service worker: network-first real (cache: "reload"), cache solo offline.
 └── icon.svg              # Ícono de la app (SVG, texto plano). Usado por manifest y apple-touch-icon.
 ```
 
